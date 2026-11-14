@@ -2,7 +2,7 @@
 
 - Verifier: `verifier` (independent reviewer; read-only except this report)
 - v1.5 final pass: 2026-11-14 (America/Toronto), after the v1.5 implementation was installed
-- Workspace: `/Users/alanchen/Local Documents/Dev/dsh-github-intergration`
+- Workspace: `/Users/alanchen/Local Documents/Dev/dsh-github-actions`
 - Installed profile: `web`, `DSH_PROFILE_DIR=~/.dsh/profiles/web`, DSH Web GUI `http://127.0.0.1:3080`
 - Installed package: `~/.dsh/profiles/web/node_modules/@local/dsh-github-actions` → symlink to the workspace; installed and workspace `src/` hashes are identical
 - Installed v1.5 source hashes: `src/client.js` `fc5018cfb274d4645e74b065e74e2915be66b9d6b11425b9b951ea43d82759cf`, `src/index.js` `9b7f3aebd36dd859dd5d2098e7f808da98d80e27d809a14393d49fa347bdba75` (unchanged since v1.2), `src/runs.js` `ce6a6252611e273d2cc5f4f04c8767ef51f18e854bf207efd4605a349e8e85b7`, `src/remotes.js` `82e4a6f6ac6b0e37bc2284c1c623fe30a741a6afb95392bacbf0e5275fd18d05` (all in the appendix); earlier pass hashes are historical.

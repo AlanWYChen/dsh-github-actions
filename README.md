@@ -89,7 +89,7 @@ From this repository:
 
 ```sh
 # inside the DSH profile that runs http://127.0.0.1:3080
-dsh plugin add "/path/to/dsh-github-intergration"
+dsh plugin add "/path/to/dsh-github-actions"
 ```
 
 or install the bundle from the Web GUI's plugin manager by pointing it at this
