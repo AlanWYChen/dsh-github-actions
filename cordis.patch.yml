@@ -1,0 +1,3 @@
+- insert:
+    - id: github-actions
+      name: '@local/dsh-github-actions'

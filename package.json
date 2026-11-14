@@ -1,0 +1,39 @@
+{
+  "name": "@local/dsh-github-actions",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Show the GitHub Actions runs currently running or queued for the selected workspace.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./client": "./src/client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "src/",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node scripts/run-tests.mjs all",
+    "check": "node --check src/index.js && node --check src/client.js && node --check src/device-flow.js && node --check src/git.js && node --check src/remotes.js && node --check src/runs.js"
+  },
+  "dependencies": {
+    "schemastery": "^3.18.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-connection"
+      ]
+    }
+  }
+}
