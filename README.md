@@ -37,6 +37,16 @@ The package ships both halves:
    conclusion pill such as Success, Failed, or Timed out). Clicking or pressing
    Enter/Space on a row opens the run on GitHub in a new tab.
 
+The panel remembers the last selected workspace in browser `localStorage` (key
+`github-actions.workspace`, best-effort). It also keeps a session-only in-memory
+snapshot cache per workspace (at most 20 entries, never persisted): returning to
+a workspace renders its last snapshot immediately while a background refresh
+runs, and a workspace with no cache shows a localized "Loading runs…" status.
+The header shows one workspace select (always the workspace title) followed by
+a button-like GitHub control containing the repository `owner/name` and icon.
+The panel fills its host height: Running is bounded and Recent takes the
+remaining space and scrolls internally.
+
 Authentication uses the GitHub **OAuth device flow**, so there is no client
 secret, no redirect handling, and no password typed into the panel. The token is
 stored in the Host credential store and is never sent to the browser.

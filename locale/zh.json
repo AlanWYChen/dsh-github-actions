@@ -74,5 +74,7 @@
   "header.status": "状态",
   "header.completed": "完成时间",
   "a11y.runningList": "正在运行的工作流列表",
-  "a11y.recentList": "最近完成的工作流列表"
+  "a11y.recentList": "最近完成的工作流列表",
+  "a11y.openRepo": "在 GitHub 上打开仓库",
+  "loading": "正在加载运行…"
 }

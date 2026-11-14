@@ -163,6 +163,134 @@
         }
       ],
       "note": "Satisfiability: all 6 layout tests pass against a throwaway v1.2 stub outside the workspace (/tmp, deleted); full stub gate 80/80, so the new suite is satisfiable and the 74 existing tests stay green under the v1.2 layout changes."
+    },
+    "v13OriginalRed": {
+      "when": "2026-11-13, v1.3 panel UX increment, against the current v1.2 implementation",
+      "command": "node scripts/run-tests.mjs all",
+      "exitCode": 1,
+      "nodeTestSummary": {
+        "tests": 86,
+        "pass": 80,
+        "fail": 6,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "failureClasses": [
+        {
+          "class": "v1.3 panel UX behavior missing",
+          "files": [
+            "test/ux.test.js"
+          ],
+          "tests": 6,
+          "reason": "stored workspace id is ignored (ws-a used instead of ws-b), no localStorage write on selection change, header select shows the workspace title instead of the repo slug, the old separate Workspace label still renders, the full-height CSS chain is absent (no height:100%/flex-fill/40vh/Recent max-height:none/14px padding), and a11y.openRepo is absent from the dictionaries/files. All behavioral/expected-value; the existing 80 tests pass unchanged."
+        }
+      ],
+      "note": "Original v1.3 increment RED before the approved header-padding revision: 86 tests / 80 pass / 6 fail (workspace memory, header, \u00a718 layout, locale missing). Satisfiability was validated against a throwaway v1.3 stub (6/6 ux, 86/86 total)."
+    },
+    "v13Red": {
+      "when": "2026-11-14, after the user-approved header-padding revision, against the current implementation",
+      "command": "node scripts/run-tests.mjs all",
+      "exitCode": 1,
+      "nodeTestSummary": {
+        "tests": 86,
+        "pass": 85,
+        "fail": 1,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "failureClasses": [
+        {
+          "class": "approved \u00a718 header-padding revision pending in src/",
+          "files": [
+            "test/ux.test.js"
+          ],
+          "tests": 1,
+          "reason": "`.gha-header` horizontal padding is still 14px; the approved alignment fix requires 28px (header content box must equal a row content box: .gha-list 14px + row 14px). The revised assertion fails only for this value; the other 85 tests pass."
+        }
+      ],
+      "note": "Expected RED for the approved revision. The implementer changes `.gha-header` horizontal padding from 14px to 28px (no test change); GREEN gate becomes 86/86. Original increment RED is preserved in v13OriginalRed."
+    },
+    "v14InitialRed": {
+      "when": "2026-11-14, v1.4 perceived-latency/toolbar increment, against the current v1.3 implementation",
+      "command": "node scripts/run-tests.mjs all",
+      "exitCode": 1,
+      "nodeTestSummary": {
+        "tests": 93,
+        "pass": 86,
+        "fail": 7,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "failureClasses": [
+        {
+          "class": "v1.4 cache/loading/toolbar behavior missing",
+          "files": [
+            "test/ux2.test.js"
+          ],
+          "tests": 7,
+          "reason": "no per-workspace snapshot cache (cache hit does not render immediately; failed refresh loses rows; no 20-entry bound); no loading state; the selected option still shows the repo slug instead of the workspace title; the repo control lacks slug text/button styling; .gha-runs gap and .gha-empty-line centering absent; the loading locale key is missing. All behavioral/expected-value; the existing 86 tests pass unchanged."
+        }
+      ],
+      "note": "Initial v1.4 RED before the approved v1.3 label revision (93 tests / 86 pass / 7 fail: all 7 ux2 behavior-missing)."
+    },
+    "v14Red": {
+      "when": "2026-11-14, after the approved v1.3 dropdown-label revision, against the current v1.3 implementation",
+      "command": "node scripts/run-tests.mjs all",
+      "exitCode": 1,
+      "nodeTestSummary": {
+        "tests": 93,
+        "pass": 85,
+        "fail": 8,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "failureClasses": [
+        {
+          "class": "v1.4 cache/loading/toolbar behavior missing",
+          "files": [
+            "test/ux2.test.js"
+          ],
+          "tests": 7,
+          "reason": "no per-workspace snapshot cache/loading state; dropdown label still repo slug; no slug+icon repo control/picker sizing; no 16px gap / centered empty line; loading locale key missing."
+        },
+        {
+          "class": "approved v1.3 dropdown-label revision pending in src/",
+          "files": [
+            "test/ux.test.js"
+          ],
+          "tests": 1,
+          "reason": "the revised assertion expects the selected dropdown label to be the workspace title \"Alpha\"; current src still shows \"octo/hello\". Expected RED until the v1.4 \u00a722 change lands."
+        }
+      ],
+      "note": "Satisfiability: a throwaway v1.4 reference stub passes ux2 7/7, and with the two approved label revisions it passes the full gate 93/93."
+    },
+    "v15Red": {
+      "when": "2026-11-14, v1.5 cache-lifetime/ordering increment, against the current v1.4 implementation",
+      "command": "node scripts/run-tests.mjs all",
+      "exitCode": 1,
+      "nodeTestSummary": {
+        "tests": 95,
+        "pass": 93,
+        "fail": 2,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "failureClasses": [
+        {
+          "class": "v1.5 cache lifetime + response ordering missing",
+          "files": [
+            "test/ux3.test.js"
+          ],
+          "tests": 2,
+          "reason": "the snapshot cache still lives in the page component useRef, so unmount/remount loses it (\"cached rows survive remount\" fails); concurrent same-workspace reads have no request tokens, so an older response overwrites the newer one (\"the newer response stays rendered\" fails). All behavioral/expected-value; the 93 existing tests pass unchanged."
+        }
+      ],
+      "note": "Satisfiability: the 2 ux3 tests pass against a throwaway v1.5 stub outside the workspace (/tmp, deleted); full stub gate 95/95, so the new suite is satisfiable and the 93 frozen tests stay green under the v1.5 changes."
     }
   },
   "approvedContractRevisions": [
@@ -211,6 +339,32 @@
         }
       ],
       "verification": "Reconstruction diff vs the pre-revision files: runs.test.js +1; host.test.js +50/-17. No other lines changed. Final RED captured: 74 tests / 52 pass / 22 fail (17 new behavior-missing + 4 expected v1-revision failures + 1 Config)."
+    },
+    {
+      "date": "2026-11-14",
+      "increment": "v1.3 panel UX",
+      "approval": "explicit user approval obtained via the Lead (2026-11-14)",
+      "file": "test/ux.test.js",
+      "test": "the panel fills its height: Recent flex-fills, Running caps at 40vh, and empty/list padding is row-aligned (\u00a718)",
+      "change": "`.gha-header` horizontal padding expectation changed from 14px to 28px; `.gha-section-title` stays 14px; the shared loop was split into per-class expectations",
+      "reason": "The header row sits outside `.gha-list`, so header content-box alignment with a data row requires list 14px + row 14px = 28px. The verifier measured header Name x=14 vs row x=28 (Workflow x=320 vs 306) at W=1000 with the old 14px.",
+      "diff": "for (const [className, expectedPadding] of [\n  ['gha-section-title', '14px'],\n  // header sits outside .gha-list: list 14px + row 14px\n  ['gha-header', '28px'],\n]) { ... horizontal.every((value) => value === expectedPadding) ... }",
+      "integrityProof": "Reverting only the header tuple value to 14px and the split loop to the previous shared loop restores the previous v1.3 hash 12a935faf5bccf77428252b959131f87a8ea5d1d79cbabde23c358515ba51d15; no other line changed."
+    },
+    {
+      "date": "2026-11-14",
+      "increment": "v1.4 perceived latency + toolbar polish",
+      "approval": "explicit user direction in the v1.4 feedback (\"the dropdown always be the project name\"), relayed by the Lead",
+      "file": "test/ux.test.js",
+      "test": "the header has ONE select labelled with the repo slug and a GitHub icon link (\u00a717)",
+      "change": "the two selected-option label assertions now expect the workspace title \"Alpha\" instead of REPO.slug; the first message reads \"the closed control shows the workspace title\"",
+      "reason": "v1.4 \u00a722 requires the dropdown label to always be the workspace/project title (repo identity moves to a separate control), so the v1.3 assertions pinning the closed control to the repo slug are superseded by the explicit user direction.",
+      "lines": [
+        1535,
+        1582
+      ],
+      "diff": "- assert.equal(text(selected).trim(), REPO.slug, 'the closed control shows the repo slug');\n+ assert.equal(text(selected).trim(), 'Alpha', 'the closed control shows the workspace title');\n...\n- assert.equal(text(soleSelected).trim(), REPO.slug);\n+ assert.equal(text(soleSelected).trim(), 'Alpha');",
+      "integrityProof": "Reverting these two lines restores the previous test/ux.test.js hash fb9579695c8b1699d0fa803a2db39e1983fcee017cd853a61810a76874306ed7; no other line in the file changed."
     }
   ],
   "smokeValidation": {
@@ -219,7 +373,7 @@
     "conflictEvidence": "70/74 total; the four failures are exactly the frozen-v1 conflicts above",
     "note": "Temporary /tmp sandbox only; deleted. No production file touched in the workspace. The 17 new tests passed 17/17 on a v1.1 reference stub; the full stub gate showed exactly the four then-unrevised v1 conflicts (70/74)."
   },
-  "testsOnceImplemented": 80,
+  "testsOnceImplemented": 95,
   "files": [
     {
       "path": "scripts/run-tests.mjs",
@@ -270,6 +424,21 @@
       "path": "test/layout.test.js",
       "sha256": "315ce4fb03eaac278e9acdecc6e494ffd8d504bad37dccdea71564a95f607517",
       "status": "new v1.2 suite (final)"
+    },
+    {
+      "path": "test/ux.test.js",
+      "sha256": "a72867f4a82e74c2e8a78418319feda319df635a980599d6ec7a9f58f469d685",
+      "status": "frozen v1.3 suite (approved v1.4 dropdown-label revision)"
+    },
+    {
+      "path": "test/ux2.test.js",
+      "sha256": "5b940df91dc74da0c04a32534b1d93563b6f89c8d4b4c4a8f3660b2e1ee7a7f3",
+      "status": "new v1.4 suite (final)"
+    },
+    {
+      "path": "test/ux3.test.js",
+      "sha256": "e58eac813315559567fe9ede7363d81a70c340128c518e0c91736d38ed549f12",
+      "status": "new v1.5 suite (final)"
     }
   ],
   "freezeStatus": "final",
@@ -296,5 +465,28 @@
     "increment": "v1.2 layout + scrolling",
     "approvedContractRevisions": [],
     "note": "NEW increment: no existing assertion, fixture, harness, or runner changed. The only new frozen artifact is test/layout.test.js. v1.1 approvedContractRevisions above remain historical and unchanged."
+  },
+  "v13Freeze": {
+    "increment": "v1.3 panel UX (workspace memory, repo-labelled header, full-height layout)",
+    "approvedContractRevisions": [],
+    "note": "NEW increment: no existing assertion, fixture, harness, or runner changed by the increment; the only new frozen artifact is test/ux.test.js. One user-approved revision to test/ux.test.js followed (see approvedContractRevisions: .gha-header padding 14px -> 28px)."
+  },
+  "v14Freeze": {
+    "increment": "v1.4 perceived latency + toolbar polish (in-memory cache, loading state, repo-labelled header control, spacing)",
+    "status": "final",
+    "newFile": {
+      "path": "test/ux2.test.js",
+      "sha256": "5b940df91dc74da0c04a32534b1d93563b6f89c8d4b4c4a8f3660b2e1ee7a7f3"
+    },
+    "approvedContractRevisions": [
+      "the two selected-option label assertions now expect the workspace title \"Alpha\" instead of REPO.slug; the first message reads \"the closed control shows the workspace title\""
+    ],
+    "satisfiability": "ux2 7/7 passes against a throwaway v1.4 stub; with the two approved label revisions the full stub gate is 93/93 and every other frozen test stays green.",
+    "note": "NEW increment plus one user-approved revision of two v1.3 label assertions. New frozen artifact: test/ux2.test.js; revised frozen artifact: test/ux.test.js. All other artifacts unchanged."
+  },
+  "v15Freeze": {
+    "increment": "v1.5 cache lifetime (module-scope, survives panel unmount/remount) + same-workspace response ordering",
+    "approvedContractRevisions": [],
+    "note": "NEW increment: no existing assertion, fixture, harness, or runner changed. The only new frozen artifact is test/ux3.test.js. Previous approvedContractRevisions entries remain historical and unchanged."
   }
 }

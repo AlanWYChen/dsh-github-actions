@@ -497,3 +497,26 @@ The v1.2 layout + scrolling acceptance suite is `test/layout.test.js`, documente
 in [`TEST-HANDOFF-V1.2.md`](TEST-HANDOFF-V1.2.md). It is a NEW suite with no
 revision to any existing assertion: the frozen v1/v1.1 tests, fixtures, and
 `scripts/run-tests.mjs` are unchanged. The GREEN gate is 80/80.
+
+## v1.3 increment pointer
+
+The v1.3 panel-UX acceptance suite is `test/ux.test.js`, documented in
+[`TEST-HANDOFF-V1.3.md`](TEST-HANDOFF-V1.3.md). It is a NEW suite with no
+revision to any existing assertion: the frozen v1/v1.1/v1.2 tests, fixtures, and
+`scripts/run-tests.mjs` are unchanged. The GREEN gate is 86/86.
+
+## v1.4 increment pointer
+
+The v1.4 perceived-latency/toolbar suite is `test/ux2.test.js`, documented in
+[`TEST-HANDOFF-V1.4.md`](TEST-HANDOFF-V1.4.md). It also carries one user-approved
+revision to two frozen v1.3 dropdown-label assertions in `test/ux.test.js`
+(explicit user direction: the dropdown always shows the project name). All other
+frozen tests, fixtures, and `scripts/run-tests.mjs` are unchanged. The GREEN gate
+is 93/93.
+
+## v1.5 increment pointer
+
+The v1.5 cache-lifetime/response-ordering suite is `test/ux3.test.js`,
+documented in [`TEST-HANDOFF-V1.5.md`](TEST-HANDOFF-V1.5.md). It is a NEW suite
+with no revision to any existing assertion: the frozen v1–v1.4 tests, fixtures,
+and `scripts/run-tests.mjs` are unchanged. The GREEN gate is 95/95.

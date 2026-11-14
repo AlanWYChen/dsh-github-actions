@@ -74,5 +74,7 @@
   "header.status": "Status",
   "header.completed": "Completed",
   "a11y.runningList": "Running workflow runs",
-  "a11y.recentList": "Recent finished runs"
+  "a11y.recentList": "Recent finished runs",
+  "a11y.openRepo": "Open repository on GitHub",
+  "loading": "Loading runs…"
 }

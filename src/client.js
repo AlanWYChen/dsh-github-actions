@@ -44,6 +44,7 @@ window.__ModuleLoader__.load({
         'state.notGithub': 'This checkout is not a GitHub repository',
         'state.ready': 'Active workflow runs',
         'state.error': 'GitHub Actions is unavailable',
+        loading: 'Loading runs…',
         'setup.intro': 'Create a GitHub OAuth App once, then paste its Client ID here. The device flow does not need a client secret.',
         'setup.step1': 'Open GitHub → Settings → Developer settings → OAuth Apps → New OAuth App.',
         'setup.step2': 'Fill in the fields below, tick Enable Device Flow, and register the application.',
@@ -93,6 +94,7 @@ window.__ModuleLoader__.load({
         'header.completed': 'Completed',
         'a11y.runningList': 'Running workflow runs',
         'a11y.recentList': 'Recent finished runs',
+        'a11y.openRepo': 'Open repository on GitHub',
         'stale.warning': 'Showing the last successful list; GitHub could not be refreshed.',
         'pill.running': 'Running',
         'pill.queued': 'Queued',
@@ -120,6 +122,7 @@ window.__ModuleLoader__.load({
         'state.notGithub': '此检出不是 GitHub 仓库',
         'state.ready': '正在运行的工作流',
         'state.error': 'GitHub Actions 暂不可用',
+        loading: '正在加载运行…',
         'setup.intro': '只需创建一次 GitHub OAuth 应用，然后把它的 Client ID 粘贴到这里。设备流不需要客户端密钥。',
         'setup.step1': '打开 GitHub → Settings → Developer settings → OAuth Apps → New OAuth App。',
         'setup.step2': '按下表填写字段，勾选 Enable Device Flow，然后注册应用。',
@@ -169,6 +172,7 @@ window.__ModuleLoader__.load({
         'header.completed': '完成时间',
         'a11y.runningList': '正在运行的工作流列表',
         'a11y.recentList': '最近完成的工作流列表',
+        'a11y.openRepo': '在 GitHub 上打开仓库',
         'stale.warning': '正在显示最后一次成功的列表；GitHub 暂时无法刷新。',
         'pill.running': '运行中',
         'pill.queued': '排队中',
@@ -298,14 +302,19 @@ window.__ModuleLoader__.load({
     /* ------------------------------------------------------------------ */
 
     const CSS = `
-.gha-page{display:flex;flex-direction:column;gap:16px;padding:20px;color:var(--dsw-alias-label-primary);font:inherit}
-.gha-toolbar{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.gha-page{box-sizing:border-box;display:flex;flex-direction:column;height:100%;min-height:0;gap:16px;padding:20px;color:var(--dsw-alias-label-primary);font:inherit}
+.gha-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .gha-toolbar-main{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-width:0}
 .gha-title{margin:0;font-size:18px;font-weight:600;letter-spacing:-0.01em}
 .gha-repo{color:var(--dsw-alias-brand-primary);text-decoration:none}
 .gha-repo:hover{text-decoration:underline}
 .gha-repo-none{color:var(--dsw-alias-label-secondary)}
 .gha-toolbar-actions{display:flex;align-items:center;gap:8px}
+.gha-repo-select{min-width:240px;max-width:360px;width:auto;text-overflow:ellipsis;height:32px}
+.gha-repo-link{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);text-decoration:none;white-space:nowrap;font-size:13px}
+.gha-repo-link:hover{background:var(--dsw-alias-interactive-bg-hover)}
+.gha-repo-icon{display:block;flex:none;line-height:1}
+.gha-loading{display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:var(--dsw-alias-label-secondary);font-size:13px}
 .gha-button{appearance:none;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:6px 12px;cursor:pointer;transition:background-color .15s ease,border-color .15s ease}
 .gha-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}
 .gha-button:focus-visible,.gha-run:focus-visible,.gha-input:focus-visible,.gha-select:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:2px}
@@ -314,7 +323,8 @@ window.__ModuleLoader__.load({
 .gha-button-primary:hover:not(:disabled){background:var(--dsw-alias-button-primary-hover)}
 .gha-button-quiet{border-color:transparent;background:transparent;color:var(--dsw-alias-label-secondary)}
 .gha-banner{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid var(--dsw-alias-state-warn-secondary);background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-state-warn-label);border-radius:8px;padding:8px 12px;font-size:13px}
-.gha-body{min-width:0}
+.gha-body{min-width:0;flex:1;min-height:0;display:flex;flex-direction:column}
+.gha-runs{flex:1;min-height:0;display:flex;flex-direction:column;gap:16px}
 .gha-state{display:flex;flex-direction:column;gap:10px;max-width:640px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-layer-2);padding:20px}
 .gha-state-title{margin:0;font-size:15px;font-weight:600}
 .gha-state p{margin:0;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5}
@@ -329,7 +339,7 @@ window.__ModuleLoader__.load({
 .gha-user-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:18px;letter-spacing:.12em;border:1px dashed var(--dsw-alias-border-l2);border-radius:8px;padding:6px 12px;background:var(--dsw-alias-bg-layer-1)}
 .gha-link{color:var(--dsw-alias-brand-primary)}
 .gha-pending{color:var(--dsw-alias-label-secondary)}
-.gha-list{display:flex;flex-direction:column;gap:8px}
+.gha-list{display:flex;flex-direction:column;gap:8px;padding:10px 14px 14px}
 .gha-run,.gha-header{display:grid;grid-template-columns:minmax(0, 1fr) 140px 140px 110px 96px 132px;align-items:center;gap:12px}
 .gha-run{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-1);padding:10px 14px;cursor:pointer;transition:border-color .15s ease,background-color .15s ease}
 .gha-run:hover{background:var(--dsw-alias-interactive-bg-hover)}
@@ -342,15 +352,19 @@ window.__ModuleLoader__.load({
 .gha-stale{font-size:12px;color:var(--dsw-alias-state-warn-label);margin:0}
 .gha-empty{max-width:none}
 .gha-section{display:flex;flex-direction:column;gap:8px;min-width:0}
-.gha-scroll{overflow-y:auto;max-height:min(52vh, 640px);scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l2) var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-layer-1);padding:0 10px 10px}
+.gha-scroll{box-sizing:border-box;overflow-y:auto;max-height:min(52vh, 640px);scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l2) var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-layer-1);padding:0 0 10px}
+.gha-recent{flex:1;min-height:0}
+.gha-recent .gha-scroll{flex:1;min-height:0;max-height:none}
+.gha-running .gha-scroll{max-height:40vh}
 .gha-scroll::-webkit-scrollbar{width:8px}
 .gha-scroll::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:8px}
 .gha-scroll::-webkit-scrollbar-track{background:var(--dsw-alias-bg-layer-1)}
-.gha-section-title{position:sticky;top:0;z-index:1;margin:0;padding:8px 0;font-size:14px;font-weight:600;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-1)}
-.gha-header{padding:6px 14px;border-bottom:1px solid var(--dsw-alias-border-l2)}
+.gha-section-title{position:sticky;top:0;z-index:1;margin:0;padding:8px 14px;font-size:14px;font-weight:600;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-1)}
+.gha-header{padding:6px 28px;border-bottom:1px solid var(--dsw-alias-border-l2)}
 .gha-header-cell{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--dsw-alias-label-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.gha-empty-line{margin:0;color:var(--dsw-alias-label-secondary);font-size:13px}
-.gha-history-warning{margin:0;font-size:12px;color:var(--dsw-alias-state-warn-label)}
+.gha-empty-wrap{padding:10px 14px 14px}
+.gha-empty-line{margin:0;padding:14px;text-align:center;color:var(--dsw-alias-label-secondary);font-size:13px}
+.gha-history-warning{margin:0;padding:0 28px;font-size:12px;color:var(--dsw-alias-state-warn-label)}
 .gha-pill-success{border-color:var(--dsw-alias-state-success-secondary);background:var(--dsw-alias-state-success-tertiary);color:var(--dsw-alias-state-success-primary)}
 .gha-pill-failure{border-color:var(--dsw-alias-state-warn-secondary);background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-state-warn-label)}
 .gha-pill-neutral{border-color:var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-secondary)}
@@ -449,6 +463,87 @@ window.__ModuleLoader__.load({
       };
     }
 
+    const WORKSPACE_STORAGE_KEY = 'github-actions.workspace';
+
+    function browserStorage() {
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          return window.localStorage;
+        }
+      } catch {
+        /* storage access can throw in hardened browsers */
+      }
+
+      try {
+        if (typeof localStorage !== 'undefined' && localStorage) return localStorage;
+      } catch {
+        /* storage access can throw in hardened browsers */
+      }
+
+      return undefined;
+    }
+
+    function readStoredWorkspaceId() {
+      try {
+        const storage = browserStorage();
+
+        if (storage === undefined) return undefined;
+
+        const value = storage.getItem(WORKSPACE_STORAGE_KEY);
+
+        return typeof value === 'string' && value.length > 0 ? value : undefined;
+      } catch {
+        return undefined;
+      }
+    }
+
+    function writeStoredWorkspaceId(id) {
+      try {
+        const storage = browserStorage();
+
+        if (storage !== undefined) storage.setItem(WORKSPACE_STORAGE_KEY, id);
+      } catch {
+        /* workspace memory is best-effort */
+      }
+    }
+
+    function initialWorkspaceId(items, fallback) {
+      const ids = items.map((item) => String(item.workspaceId ?? item.id ?? ''));
+      const stored = readStoredWorkspaceId();
+
+      if (stored !== undefined && ids.includes(stored)) return stored;
+
+      return ids[0] ?? (typeof fallback === 'string' ? fallback : null);
+    }
+
+    // §25/§26: one snapshot cache and one per-workspace token sequence per client
+    // module instance. The cache survives panel unmount/remount, is dropped by a
+    // page reload, is never persisted, and is bounded to 20 entries.
+    const snapshotCache = new Map();
+    const latestRequestTokens = new Map();
+    let requestTokenSequence = 0;
+
+    function nextSnapshotRequestToken(workspaceId) {
+      requestTokenSequence += 1;
+      latestRequestTokens.set(String(workspaceId), requestTokenSequence);
+
+      return requestTokenSequence;
+    }
+
+    function isLatestSnapshotRequest(workspaceId, token) {
+      return latestRequestTokens.get(String(workspaceId)) === token;
+    }
+
+    function cacheSnapshot(workspaceId, value) {
+      snapshotCache.set(String(workspaceId), value);
+
+      while (snapshotCache.size > 20) {
+        const oldest = snapshotCache.keys().next().value;
+
+        snapshotCache.delete(oldest);
+      }
+    }
+
     function GitHubActionsPage(props) {
       const config = normalizeClientConfig(props.config);
       const pollMs = nextPollDelay(config);
@@ -468,12 +563,24 @@ window.__ModuleLoader__.load({
             : [];
 
       const [status, setStatus] = React.useState(null);
-      const [snapshot, setSnapshot] = React.useState(null);
+      const [selectedWorkspaceId, setSelectedWorkspaceId] = React.useState(() =>
+        initialWorkspaceId(workspaceItems, props.workspaceId),
+      );
+      const [snapshot, setSnapshot] = React.useState(() => {
+        const id =
+          selectedWorkspaceId ??
+          props.workspaceId ??
+          workspaceItems[0]?.workspaceId ??
+          workspaceItems[0]?.id ??
+          null;
+        const cached = id === null || id === undefined ? undefined : snapshotCache.get(String(id));
+
+        return cached ?? null;
+      });
       const [loadError, setLoadError] = React.useState(null);
       const [clientIdDraft, setClientIdDraft] = React.useState('');
       const [signIn, setSignIn] = React.useState(null);
       const [busy, setBusy] = React.useState(false);
-      const [selectedWorkspaceId, setSelectedWorkspaceId] = React.useState(undefined);
 
       const activeWorkspaceId =
         selectedWorkspaceId ??
@@ -481,6 +588,10 @@ window.__ModuleLoader__.load({
         workspaceItems[0]?.workspaceId ??
         workspaceItems[0]?.id ??
         null;
+
+      const activeWorkspaceIdRef = React.useRef(activeWorkspaceId);
+
+      activeWorkspaceIdRef.current = activeWorkspaceId;
 
       const loadStatus = React.useCallback(async () => {
         try {
@@ -498,10 +609,16 @@ window.__ModuleLoader__.load({
 
       const loadSnapshot = React.useCallback(
         async (options) => {
-          if (activeWorkspaceId === null || activeWorkspaceId === undefined) return null;
+          const requestWorkspaceId = activeWorkspaceId;
+
+          if (requestWorkspaceId === null || requestWorkspaceId === undefined) return null;
+
+          // §26: monotonically increasing token per workspace. Only the latest
+          // issued read may apply to state, cache, or the error banner.
+          const requestToken = nextSnapshotRequestToken(requestWorkspaceId);
 
           try {
-            const payload = { workspaceId: activeWorkspaceId };
+            const payload = { workspaceId: requestWorkspaceId };
 
             if (options !== null && typeof options === 'object' && options.refresh === true) {
               payload.refresh = true;
@@ -511,11 +628,27 @@ window.__ModuleLoader__.load({
               await rpcCall('githubActions.snapshot', payload),
             );
 
+            // A response for a workspace the user already left must not replace
+            // the panel or pollute the cache.
+            if (activeWorkspaceIdRef.current !== requestWorkspaceId) return value ?? null;
+
+            if (!isLatestSnapshotRequest(requestWorkspaceId, requestToken)) {
+              return value ?? null;
+            }
+
             setSnapshot(value ?? null);
             setLoadError(null);
 
+            if (value !== null && value !== undefined) {
+              cacheSnapshot(requestWorkspaceId, value);
+            }
+
             return value ?? null;
           } catch (error) {
+            if (activeWorkspaceIdRef.current !== requestWorkspaceId) return null;
+
+            if (!isLatestSnapshotRequest(requestWorkspaceId, requestToken)) return null;
+
             setLoadError(error);
 
             return null;
@@ -726,7 +859,17 @@ window.__ModuleLoader__.load({
             ? event.target.value
             : undefined;
 
-        if (typeof next === 'string' && next.length > 0) setSelectedWorkspaceId(next);
+        if (typeof next === 'string' && next.length > 0) {
+          setSelectedWorkspaceId(next);
+          writeStoredWorkspaceId(next);
+          setLoadError(null);
+
+          const cached = snapshotCache.get(String(next));
+
+          // A cache hit renders immediately (no loading/blank); a miss shows the
+          // loading state until the fresh read settles.
+          setSnapshot(cached ?? null);
+        }
       };
 
       const effectiveAuth =
@@ -742,6 +885,64 @@ window.__ModuleLoader__.load({
       const state = describeState(viewSnapshot);
       const repo = viewSnapshot !== null ? viewSnapshot.repo : null;
       const runs = visibleRuns(viewSnapshot);
+      const loading = snapshot === null && loadError === null;
+
+      const repoLink =
+        repo !== null && repo !== undefined
+          ? h(
+              'a',
+              {
+                className: 'gha-repo-link',
+                href: repo.webUrl,
+                target: '_blank',
+                rel: 'noreferrer noopener',
+                'aria-label': t('a11y.openRepo'),
+              },
+              h(
+                'svg',
+                {
+                  className: 'gha-repo-icon',
+                  viewBox: '0 0 16 16',
+                  width: 16,
+                  height: 16,
+                  fill: 'none',
+                  stroke: 'currentColor',
+                  strokeWidth: 1.6,
+                  strokeLinecap: 'round',
+                  strokeLinejoin: 'round',
+                  'aria-hidden': 'true',
+                  focusable: 'false',
+                },
+                h('path', { d: 'M6 3H3v10h10V9' }),
+                h('path', { d: 'M9 3h4v4' }),
+                h('path', { d: 'M13 3 7.5 8.5' }),
+              ),
+              h('span', { className: 'gha-repo-slug' }, repo.slug),
+            )
+          : null;
+
+      const workspaceSelect =
+        workspaceItems.length === 0
+          ? null
+          : h(
+              'select',
+              {
+                className: 'gha-select gha-repo-select',
+                value: activeWorkspaceId ?? '',
+                'aria-label': t('workspace'),
+                onChange: handleWorkspaceChange,
+              },
+              workspaceItems.map((item) => {
+                const id = String(item.workspaceId ?? item.id ?? '');
+                const selected = id === String(activeWorkspaceId ?? '');
+
+                return h(
+                  'option',
+                  { key: id, value: id, selected },
+                  item.title ?? item.path ?? id,
+                );
+              }),
+            );
 
       const toolbar = h(
         'header',
@@ -750,43 +951,8 @@ window.__ModuleLoader__.load({
           'div',
           { className: 'gha-toolbar-main' },
           h('h2', { className: 'gha-title' }, t('title')),
-          repo !== null && repo !== undefined
-            ? h(
-                'a',
-                {
-                  className: 'gha-repo',
-                  href: repo.webUrl,
-                  target: '_blank',
-                  rel: 'noreferrer noopener',
-                  title: repo.webUrl,
-                },
-                repo.slug,
-              )
-            : h('span', { className: 'gha-repo gha-repo-none' }, t('repo.none')),
-          workspaceItems.length > 1
-            ? h(
-                'label',
-                { className: 'gha-field gha-field-inline' },
-                h('span', null, t('workspace')),
-                h(
-                  'select',
-                  {
-                    className: 'gha-select',
-                    value: activeWorkspaceId ?? '',
-                    onChange: handleWorkspaceChange,
-                  },
-                  workspaceItems.map((item) => {
-                    const id = String(item.workspaceId ?? item.id ?? '');
-
-                    return h(
-                      'option',
-                      { key: id, value: id },
-                      item.title ?? item.path ?? id,
-                    );
-                  }),
-                ),
-              )
-            : null,
+          workspaceSelect,
+          repoLink,
         ),
         h(
           'div',
@@ -1144,7 +1310,11 @@ window.__ModuleLoader__.load({
                 : h('p', { className: 'gha-history-warning', role: 'status' }, warning),
               renderHeader(kind === 'recent'),
               rows.length === 0
-                ? h('p', { className: 'gha-empty-line' }, emptyLabel)
+                ? h(
+                    'div',
+                    { className: 'gha-list gha-empty-wrap' },
+                    h('p', { className: 'gha-empty-line' }, emptyLabel),
+                  )
                 : h('div', { role: 'list', className: 'gha-list' }, rows),
             ),
           );
@@ -1195,7 +1365,17 @@ window.__ModuleLoader__.load({
         { className: 'gha-page' },
         toolbar,
         banner,
-        h('section', { className: 'gha-body' }, renderBody()),
+        h(
+          'section',
+          { className: 'gha-body' },
+          loading
+            ? h(
+                'div',
+                { className: 'gha-loading', role: 'status', 'aria-live': 'polite' },
+                t('loading'),
+              )
+            : renderBody(),
+        ),
       );
     }
 

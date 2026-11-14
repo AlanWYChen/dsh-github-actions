@@ -446,3 +446,114 @@ Four user-reported issues:
    Running cap `40vh`, empty-line `14px` padding, scroll container without horizontal
    padding; no literal colors; theme tokens only.
 4. All previous 80 tests stay green unchanged; v1.3 tests are a NEW suite.
+
+---
+
+# v1.4 increment — perceived latency and toolbar polish (user feedback 2026-11-14)
+
+Issues: switching project/repo re-fetches from GitHub with no cache and no loading
+state; the workspace dropdown is too narrow; Running and Recent sit too close; the
+empty line is not horizontally centered; the dropdown label switches to the repo slug
+instead of always showing the project; the GitHub go control is too small/unstyled and
+sits slightly high relative to the toolbar buttons.
+
+## 20. In-memory snapshot cache (client)
+
+- The client keeps a session-lifetime in-memory cache `Map<workspaceId, Snapshot>`.
+  It is NOT persisted to disk and is dropped when the page reloads.
+- On a workspace switch (or when switching back), if a cached snapshot exists it is
+  rendered immediately — the panel must not show the loading state and must not blank —
+  while a fresh `githubActions.snapshot` read runs in the background (no `refresh: true`),
+  replacing the entry on success.
+- Cache writes happen only on a successful snapshot (never a null/error value).
+- Cache is bounded (at most 20 workspace entries; oldest insertion evicted).
+- A failed background refresh keeps the cached view and surfaces the existing error
+  banner (no blanking).
+- A workspace with no cache shows §21 loading.
+
+## 21. Loading state
+
+- New render state `loading`: selected workspace has no cached snapshot and a snapshot
+  request is in flight. It renders a centered status line (role="status",
+  aria-live="polite") with the localized text "Loading runs…" and no empty lines,
+  lists, or headers.
+- It is transient: on success → ready; on failure → the error surface; if a cache
+  appears (switch back) → ready immediately.
+- Existing `describeState` semantics stay unchanged (`describeState(null)` remains
+  `error`); loading is a separate page-level condition layered above it.
+
+## 22. Toolbar
+
+- The dropdown label is ALWAYS the project/workspace title (never the repo slug); the
+  option labels stay workspace titles.
+- Dropdown sizing follows DSH picker conventions: `min-width:240px`, `max-width:360px`,
+  `width:auto`, `text-overflow:ellipsis`, same height as the toolbar buttons.
+- Repo identity is a separate control AFTER the dropdown and shows `repo.slug` text
+  together with the GitHub icon, styled as an inline-flex "button-like" link:
+  `display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 10px;
+  border:1px solid; border-radius:8px;` hover background, `white-space:nowrap`,
+  the icon itself `display:block; flex:none; line-height:1`.
+- The toolbar row and its left group use `align-items:center` so the dropdown, the repo
+  link, and the action buttons share one vertical center line. The go icon is centered
+  both axes inside its control.
+- No repo → no repo control (unchanged).
+
+## 23. Spacing and empty state
+
+- `.gha-runs` gets an explicit vertical gap of 16px between Running and Recent.
+- `.gha-empty-line` is horizontally centered (`text-align:center`) while keeping its
+  14px padding and margin 0; its wrapper keeps the row-aligned inset.
+
+## 24. v1.4 acceptance criteria
+
+1. Cache: switching A→B→A renders A's cached rows immediately without a loading state
+   and without clearing the list; the background read still runs; a failed background
+   read keeps rows + banner; cache never stores a failed read; bound ≤20.
+2. Loading: with no cached snapshot and a pending read, exactly one role="status"
+   element with the localized "Loading runs…" text renders and no list/empty/header.
+3. Toolbar: the selected option label equals the workspace title (never the repo slug);
+   the repo control contains the slug text and the icon, is inline-flex + centered, the
+   toolbar uses align-items:center, and the select CSS carries min-width:240px.
+4. `.gha-runs` gap 16px and `.gha-empty-line` text-align center are present.
+5. All existing 86 tests stay green unchanged; v1.4 tests are a NEW suite
+   (`test/ux2.test.js`).
+
+---
+
+# v1.5 increment — cache lifetime and response ordering (verification follow-up)
+
+Two source observations from the v1.4 independent pass, both affecting the user's
+"switching should be instant" goal:
+
+## 25. Cache survives panel unmount/remount
+
+The snapshot cache from §20 currently lives in the page component, so leaving the
+GitHub Actions panel (mounting another sidebar panel) and returning empties it and
+refetches. The cache must live for the lifetime of the loaded client module (one
+`Map` created once per module factory invocation), not per component mount:
+
+- Mount → selection A with cache present ⇒ cached rows render immediately, no loading,
+  background read still runs.
+- Unmount the page and mount it again in the same page session ⇒ the same cache is
+  used (no loading, rows from cache, background read runs).
+- Cache is still dropped on page reload and still bounded to 20 entries (§20).
+- No persistence to disk.
+
+## 26. Same-workspace response ordering
+
+Concurrent snapshot reads for the SAME workspace must not let an older response
+overwrite a newer one:
+
+- Each read carries a monotonically increasing request token per workspace; a completed
+  read applies only if its token is the latest issued for that workspace.
+- Out-of-order completion (request 1 resolves after request 2) leaves the value from
+  request 2 in state and in the cache.
+- A failed older request must not clear or error the newer successful value.
+
+## 27. v1.5 acceptance criteria
+
+1. NEW suite `test/ux3.test.js`: cache survives page unmount/remount (no loading, rows
+   render, background read runs) and remains bounded/persisted-off.
+2. Out-of-order same-workspace responses: the newer token wins in both rendered state
+   and cache; an older failure does not surface an error over the newer success.
+3. All 93 existing frozen tests stay green unchanged; v1.5 tests are a NEW suite.
