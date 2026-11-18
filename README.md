@@ -42,6 +42,10 @@ The panel remembers the last selected workspace in browser `localStorage` (key
 snapshot cache per workspace (at most 20 entries, never persisted): returning to
 a workspace renders its last snapshot immediately while a background refresh
 runs, and a workspace with no cache shows a localized "Loading runs…" status.
+Pressing **Refresh** starts a cold reload: the previous list is cleared, the same
+localized "Loading runs…" state is shown, one forced read bypasses the Host
+caches, and the refresh control spins while that read is in flight; on failure
+the error surface and banner replace the list instead of restoring stale rows.
 The header shows one workspace select (always the workspace title) followed by
 a button-like GitHub control containing the repository `owner/name` and icon.
 The panel fills its host height: Running is bounded and Recent takes the

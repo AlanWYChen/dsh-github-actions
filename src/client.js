@@ -314,6 +314,8 @@ window.__ModuleLoader__.load({
 .gha-repo-link{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);text-decoration:none;white-space:nowrap;font-size:13px}
 .gha-repo-link:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .gha-repo-icon{display:block;flex:none;line-height:1}
+.gha-refresh-icon{display:block;flex:none}
+.gha-refreshing .gha-refresh-icon{animation:gha-spin 1s linear infinite}
 .gha-loading{display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:var(--dsw-alias-label-secondary);font-size:13px}
 .gha-button{appearance:none;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:6px 12px;cursor:pointer;transition:background-color .15s ease,border-color .15s ease}
 .gha-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}
@@ -322,6 +324,7 @@ window.__ModuleLoader__.load({
 .gha-button-primary{border-color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-inverted)}
 .gha-button-primary:hover:not(:disabled){background:var(--dsw-alias-button-primary-hover)}
 .gha-button-quiet{border-color:transparent;background:transparent;color:var(--dsw-alias-label-secondary)}
+.gha-button-refresh{display:inline-flex;align-items:center;gap:6px}
 .gha-banner{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid var(--dsw-alias-state-warn-secondary);background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-state-warn-label);border-radius:8px;padding:8px 12px;font-size:13px}
 .gha-body{min-width:0;flex:1;min-height:0;display:flex;flex-direction:column}
 .gha-runs{flex:1;min-height:0;display:flex;flex-direction:column;gap:16px}
@@ -369,7 +372,9 @@ window.__ModuleLoader__.load({
 .gha-pill-failure{border-color:var(--dsw-alias-state-warn-secondary);background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-state-warn-label)}
 .gha-pill-neutral{border-color:var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-secondary)}
 @keyframes gha-pulse{0%,100%{opacity:.35}50%{opacity:1}}
+@keyframes gha-spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.gha-pill-running::before{animation:none}}
+@media (prefers-reduced-motion:reduce){.gha-refreshing .gha-refresh-icon{animation:none}}
 @media (max-width:720px){.gha-run,.gha-header{grid-template-columns:minmax(0,1fr) 120px 96px 120px}.gha-run-branch,.gha-run-event,.gha-header-branch,.gha-header-event{display:none}}
 `;
 
@@ -440,6 +445,30 @@ window.__ModuleLoader__.load({
         h('circle', { cx: 12, cy: 12, r: 9 }),
         h('path', { d: 'M10 8.2l5.2 3.8L10 15.8z' }),
         h('path', { d: 'M4.6 14.6a9 9 0 0 0 14.4 2.2', opacity: 0.5 }),
+      );
+    }
+
+    // §29: decorative refresh glyph. It inherits the control's color through
+    // `currentColor` and is hidden from assistive technology; the loading
+    // status line carries the accessible announcement.
+    function refreshGlyph() {
+      return h(
+        'svg',
+        {
+          className: 'gha-refresh-icon',
+          viewBox: '0 0 16 16',
+          width: 16,
+          height: 16,
+          fill: 'none',
+          stroke: 'currentColor',
+          strokeWidth: 1.6,
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round',
+          'aria-hidden': 'true',
+          focusable: 'false',
+        },
+        h('path', { d: 'M13.5 8.5a5.5 5.5 0 1 1-1.61-3.89' }),
+        h('path', { d: 'M13.5 3v3.5H10' }),
       );
     }
 
@@ -581,6 +610,10 @@ window.__ModuleLoader__.load({
       const [clientIdDraft, setClientIdDraft] = React.useState('');
       const [signIn, setSignIn] = React.useState(null);
       const [busy, setBusy] = React.useState(false);
+      // §28/§29: page-level flag for a manual (cold) reload. Layered above the
+      // existing `loading` computation so the loading body renders even while
+      // an error banner is still mounted.
+      const [reloading, setReloading] = React.useState(false);
 
       const activeWorkspaceId =
         selectedWorkspaceId ??
@@ -592,6 +625,13 @@ window.__ModuleLoader__.load({
       const activeWorkspaceIdRef = React.useRef(activeWorkspaceId);
 
       activeWorkspaceIdRef.current = activeWorkspaceId;
+
+      // `reloadingRef` mirrors the render flag synchronously: the poll tick runs
+      // from a timer closure and must see the in-flight reload immediately.
+      // `reloadAttemptRef` invalidates a reload abandoned by a workspace change
+      // so it cannot clear the control state for the new workspace.
+      const reloadingRef = React.useRef(false);
+      const reloadAttemptRef = React.useRef(0);
 
       const loadStatus = React.useCallback(async () => {
         try {
@@ -682,7 +722,11 @@ window.__ModuleLoader__.load({
 
         const tick = async () => {
           timer = null;
-          await loadSnapshot();
+
+          // §28: a manual cold reload owns the panel body while its forced read
+          // is in flight. Skip the scheduled read (without applying anything)
+          // and keep the normal cadence; polling resumes after it settles.
+          if (!cancelled && !reloadingRef.current) await loadSnapshot();
           if (!cancelled) schedule();
         };
 
@@ -791,8 +835,37 @@ window.__ModuleLoader__.load({
         };
       }, [signIn?.deviceCode, rpcCall, loadStatus, loadSnapshot, t]);
 
+      // §28: a manual refresh is a cold reload. The active workspace's cache
+      // entry is dropped, the §21 loading state renders immediately (the body is
+      // owned by the reload), then one forced read is issued. The flag is
+      // page-level so the loading body can render while a pre-existing error
+      // banner stays mounted, and it is cleared in `finally` on success and on
+      // failure.
       const handleRefresh = () => {
-        void loadSnapshot({ refresh: true });
+        const requestWorkspaceId = activeWorkspaceId;
+
+        if (requestWorkspaceId === null || requestWorkspaceId === undefined) return;
+        if (reloadingRef.current) return;
+
+        reloadingRef.current = true;
+        reloadAttemptRef.current += 1;
+
+        const attempt = reloadAttemptRef.current;
+
+        snapshotCache.delete(String(requestWorkspaceId));
+        setSnapshot(null);
+        setReloading(true);
+
+        void (async () => {
+          try {
+            await loadSnapshot({ refresh: true });
+          } finally {
+            if (reloadAttemptRef.current === attempt) {
+              reloadingRef.current = false;
+              setReloading(false);
+            }
+          }
+        })();
       };
 
       const handleSaveClientId = async (event) => {
@@ -860,6 +933,12 @@ window.__ModuleLoader__.load({
             : undefined;
 
         if (typeof next === 'string' && next.length > 0) {
+          // §28: changing the workspace resets the refresh control to idle and
+          // abandons any in-flight cold reload for the workspace being left; its
+          // response can no longer apply state or clear the new workspace's read.
+          reloadAttemptRef.current += 1;
+          reloadingRef.current = false;
+          setReloading(false);
           setSelectedWorkspaceId(next);
           writeStoredWorkspaceId(next);
           setLoadError(null);
@@ -885,7 +964,26 @@ window.__ModuleLoader__.load({
       const state = describeState(viewSnapshot);
       const repo = viewSnapshot !== null ? viewSnapshot.repo : null;
       const runs = visibleRuns(viewSnapshot);
-      const loading = snapshot === null && loadError === null;
+      const loading = reloading || (snapshot === null && loadError === null);
+
+      // §29: every refresh control (toolbar, repo-issue) carries the inline
+      // glyph before its localized label and exposes the animated busy state
+      // while a manual cold reload is in flight.
+      const renderRefreshControl = () =>
+        h(
+          'button',
+          {
+            type: 'button',
+            className: reloading
+              ? 'gha-button gha-button-refresh gha-refreshing'
+              : 'gha-button gha-button-refresh',
+            onClick: handleRefresh,
+            disabled: reloading ? true : undefined,
+            'aria-busy': reloading ? 'true' : undefined,
+          },
+          refreshGlyph(),
+          t('refresh'),
+        );
 
       const repoLink =
         repo !== null && repo !== undefined
@@ -957,11 +1055,7 @@ window.__ModuleLoader__.load({
         h(
           'div',
           { className: 'gha-toolbar-actions' },
-          h(
-            'button',
-            { type: 'button', className: 'gha-button', onClick: handleRefresh },
-            t('refresh'),
-          ),
+          renderRefreshControl(),
           effectiveAuth !== null &&
             typeof effectiveAuth === 'object' &&
             effectiveAuth.signedIn === true
@@ -1164,11 +1258,7 @@ window.__ModuleLoader__.load({
           h('h3', { className: 'gha-state-title' }, t(state.titleKey)),
           h('p', null, t(hintKey)),
           h('p', null, t('repoHints.common')),
-          h(
-            'button',
-            { type: 'button', className: 'gha-button', onClick: handleRefresh },
-            t('refresh'),
-          ),
+          renderRefreshControl(),
         );
       };
 

@@ -21,6 +21,59 @@
 - v1.3/v1.2/v1.1: previous gates 86/80/74; v1.1 host drive 31/31 + 7/7 retained below.
 - Security: unchanged v1.1 checks (no token in snapshot/history/error/`historyWarning`; validated/encoded history URL).
 
+## v1.6 — manual refresh cold reload + animated control (this pass)
+
+- Date: 2026-11-17 (America/Toronto). Verifier: `verifier` (independent; did not author or edit the tests, the implementation, `REQUIREMENTS.md`, `README.md`, or the frozen baseline; this report is the only file written).
+- Contract: `REQUIREMENTS.md` "v1.6 increment — manual refresh reload (user feedback 2026-11-17)" §28 (manual refresh is a cold reload), §29 (animated refresh control), §30 (acceptance criteria). Retained behavior: §20–§27 (v1.4 cache/loading/toolbar, v1.5 cache lifetime/ordering).
+- Frozen suite: new `test/ux4.test.js` (6 tests, `a212ba61…`) driving the frozen `test/fixtures/client-harness.mjs` read-only; handoff `docs/TEST-HANDOFF-V1.6.md` (FINAL); baseline `docs/frozen-tests.json` (`freezeStatus: final`).
+- **Verdict: PASS.** `node scripts/run-tests.mjs all` → **101/101 pass, 0 fail, exit 0**; 14/14 frozen hashes match; RED independently reproduced against the v1.5 source (95 pass / 6 fail, exactly the new suite); 9/9 independent deferred-RPC drives pass. No contract defect found, so no escalation packet. This pass supersedes the v1.5 verdict for v1.6; the historical v1.5 section below is retained unchanged.
+
+### Contract and freeze
+
+- New suite only: `test/ux4.test.js` (6 behavioral tests; no `skip`/`todo`/`only`). No pre-existing test, fixture, runner, locale, or `src/index.js` change. `src/client.js` is the only production file changed (v1.5 `fc5018…` → v1.6 `e400bef2…`; `src/index.js` stays `9b7f3aeb…`). The runner is byte-identical and still globs every `test/*.test.js`.
+- `docs/frozen-tests.json`: valid JSON, `testsOnceImplemented: 101`, `v16Red` present (101 tests / 95 pass / 6 fail, exit 1), `v16Freeze` present (new file `test/ux4.test.js` `a212ba61…`, `approvedContractRevisions: []`), `freezeStatus: "final"`, 14 `files` entries. The only edits vs v1.5 are additions plus `testsOnceImplemented` 95→101 — no hash, assertion, or status weakening.
+- Contract source vs frozen suite: §28–§30 coverage maps to the six tests (cold loading + forced payload, cache replacement, failure surface, poll suppression/resume, animated control + repo-issue cold reload, workspace reset/abandoned/no-op). The frozen suite is satisfiable and matches the text of §28–§30; no contradiction found.
+
+### Checks and evidence
+
+| # | Check | Result | Evidence |
+|---|---|---|---|
+| 1 | Full gate | **PASS** | `node scripts/run-tests.mjs all` → `tests 101 / pass 101 / fail 0 / cancelled 0 / skipped 0 / todo 0`, exit `0` (95 retained v1–v1.5 + 6 v1.6). |
+| 2 | Targeted suites | **PASS** | `node --test test/ux4.test.js` → 6/6; `test/ux2.test.js` → 7/7; `test/ux3.test.js` → 2/2; all exit `0`. |
+| 3 | Syntax | **PASS** | `node --check` each of the six `src/*.js` → OK. |
+| 4 | Frozen hashes | **PASS** | All **14/14** SHA-256 hashes in `docs/frozen-tests.json` / `docs/TEST-HANDOFF-V1.6.md` §7 match the files; `test/ux4.test.js` is exactly `a212ba61cb0ba9ea6cdbb62a0650059851db65a8a23473108d5cb0124920ca1d`; the 13 pre-existing test artifacts equal the v1.5 freeze (handoff §7); `locale/en.json` `80143da7…`, `locale/zh.json` `b241a25d…` match and are unmodified in git. |
+| 5 | RED evidence (independent) | **PASS** | Isolated `/tmp/gha-red-v16` = `git archive HEAD` (v1.5 `src/client.js` `fc5018…`) + a copy of the new `test/ux4.test.js`: `node scripts/run-tests.mjs all` → **101 tests / 95 pass / 6 fail**, exit `1`; exactly the six new tests fail behaviorally (e.g. "exactly one localized loading status 0 !== 1"; "renders an inline svg.gha-refresh-icon"), no import/syntax/harness errors, all 95 existing green. Matches handoff §3 / `v16Red`. |
+| 6 | Scope | **PASS** | `git status --short`: `M README.md`, `M REQUIREMENTS.md`, `M docs/frozen-tests.json`, `M src/client.js`, `?? docs/TEST-HANDOFF-V1.6.md`, `?? test/ux4.test.js` (+ this report). Diff is additive only: REQUIREMENTS +79/−0, README +4/−0, frozen JSON +48/−1 (`testsOnceImplemented`), `src/client.js` +103/−13. No change under `test/` (except the new suite), `scripts/`, `locale/`, or `src/index.js`. |
+| 7 | No test weakening | **PASS** | Runner byte-identical, no test-selection config, no `skip`/`todo`/`only` in `test/ux4.test.js`; six behavioral tests with no implementation-internal assertions (only rendered tree/labels/attributes/CSS text). |
+
+### Independent behavioral drives (not the frozen suite)
+
+A throwaway `/tmp/gha-verify-v16.mjs` imports the frozen harness by absolute file URL and uses its own deferred per-workspace `githubActions.snapshot` queues and fixtures (the click is delivered through the rendered `props.onClick`; time via the harness fake clock). **9/9 drives PASS**, exit `0`:
+
+| Drive | Result | Evidence |
+|---|---|---|
+| A. Toolbar Refresh cold reload + forced read + busy control | **PASS** | Prior rows vanish immediately; exactly one `role="status"`/`aria-live="polite"` "Loading runs…" node; no rows/lists/headers/empty lines/sections/state cards; toolbar stays; second `githubActions.snapshot` payload is exactly `{workspaceId:'ws-a', refresh:true}` (one `refresh:true` overall); control `disabled` + `aria-busy="true"` + `gha-refreshing` + `svg.gha-refresh-icon`; resolving the deferred read renders its rows, removes loading, returns the control to idle with no extra read. |
+| B. Cache replacement | **PASS** | After the forced success, leave/return shows the refreshed value with no loading; unmount/remount in the same module shows the refreshed value and **never** the superseded rows; the warm reads carry `{workspaceId}` only (no `refresh:true`). |
+| C. Failed forced read | **PASS** | Loading ends; error surface (`state.error`) + exactly one `gha-banner` with the `error.banner` text; no stale rows/lists/headers; control idle; failed read never cached (remount shows loading, not old rows); banner Retry payload has no `refresh:true` (warm), error-surface Retry payload is `{workspaceId, refresh:true}` and re-enters cold loading. |
+| D. Poll suppression / resumption | **PASS** | With the forced read pending, 3×`pollMs` elapse with still **2** snapshot calls total and loading kept; settling issues no immediate read; one further `pollMs` issues exactly one warm read and rows update. |
+| E. Repo-issue cold reload / workspace reset / abandoned / no-op | **PASS** | Repo-issue Refresh replaces the card with the cold loading state and issues a forced read with the toolbar busy; changing workspace resets the control to idle and starts the new workspace's own read; an abandoned response for the left workspace renders nothing and does not clear the new workspace's loading; with no active workspace the control is a true no-op (0 reads, no transition). |
+| F. Animated control (markup + CSS text) | **PASS** | Both toolbar and repo-issue controls: glyph inside the control **before** the label, `aria-hidden="true"`, `focusable="false"`, `stroke="currentColor"`, 16×16. Stylesheet: `@keyframes gha-spin{to{transform:rotate(360deg)}}`; `.gha-refreshing .gha-refresh-icon{animation:gha-spin 1s linear infinite}`; a `prefers-reduced-motion:reduce` rule sets the refresh animation to `none` without hiding the glyph; `.gha-refresh-icon{display:block;flex:none}`; `.gha-button-refresh{display:inline-flex;align-items:center;gap:6px}` exists so glyph+label sit inline; no literal colors in the refresh rules/keyframes. |
+| G. Locale + warm baseline | **PASS** | Flattened inline `en`/`zh` key sets are identical and equal to `locale/en.json`/`locale/zh.json`; `loading`/`refresh`/`retry` values unchanged; a warm mount read carries `{workspaceId}` only and renders. |
+| H. Banner preserved / repeat activation / stale rules | **PASS** | A pre-existing background-failure banner stays mounted while the cold reload owns the body; clicking the busy control's handler issues no second read; forced success with `stale:true` + `historyWarning` still renders `.gha-stale` + `.gha-history-warning` with the rows and clears the banner; control idle. (§28 "the toolbar (and any banner) stays" is not exercised by the frozen suite; confirmed here.) |
+| I. Retained §26 ordering | **PASS** | Leave/return creates two in-flight same-workspace reads; the newer success renders; an older late failure cannot overwrite it or banner over it; the cache keeps the newer value. |
+
+### Findings
+
+- **No v1.6 contract defect/violation found** (§28–§30); no escalation packet required.
+- **NIT-1 (test quality, non-blocking, not a weakening):** `test/ux4.test.js:544` asserts the idle state on the pre-click captured control node, which is trivially true; the busy state is still asserted on the freshly rendered tree (`:562`), so no contract coverage is lost. No test edit is warranted without user approval (frozen suite).
+- Carried **LOW-2** (`value.warning` vs `details.warning`) and **NIT-2** (scoped `<style>`) from the v1.5 report remain as previously documented; neither is a v1.6 regression.
+
+### Honest limitations / user-verifiable checks
+
+- No browser session or real DOM was available: the harness renders a virtual tree, so only markup/attributes and stylesheet text were checked. **Pixel rendering, the actual spin, and the disabled look are CSS-reviewed, not visually verified.**
+- The installed profile says `~/.dsh/profiles/web/node_modules/@local/dsh-github-actions` → symlink to this workspace (verified; installed `src/client.js` hash now equals the workspace `e400bef2…`), so no reinstall/copy is needed — only a hard refresh of the DSH Web page to load the updated client bundle.
+- User verification: hard-refresh the DSH Web page (Cmd+Shift+R) and, on a workspace with cached runs, press **Refresh** — the rows should be replaced by the centered "Loading runs…" line (toolbar stays, button disabled with a spinning glyph), then the refreshed rows should appear and the button return to idle; leaving/returning or remounting must show the refreshed rows, never the old ones. With a failed read (offline/revoked), the error surface + banner + Retry should appear with no stale rows; banner Retry stays warm, error-surface Retry repeats the cold reload. Confirm glyph/label alignment visually, and that OS "reduce motion" stops the spin while keeping the glyph visible.
+
 ## v1.5 — cache lifetime and response ordering (this pass)
 
 ### Contract and freeze

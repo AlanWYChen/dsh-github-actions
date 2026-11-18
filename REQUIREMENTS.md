@@ -557,3 +557,82 @@ overwrite a newer one:
 2. Out-of-order same-workspace responses: the newer token wins in both rendered state
    and cache; an older failure does not surface an error over the newer success.
 3. All 93 existing frozen tests stay green unchanged; v1.5 tests are a NEW suite.
+
+---
+
+# v1.6 increment — manual refresh reload (user feedback 2026-11-17)
+
+Issue: the toolbar **Refresh** control currently re-reads the snapshot in the
+background and leaves the previous runs on screen, so pressing it has no visible
+effect while the request is in flight. User request: make the refresh control
+animated and, on press, turn the panel into the same loading state it shows on a
+first open with no cache, then display the data once it is obtained.
+
+## 28. Manual refresh is a cold reload
+
+A manual refresh is triggered by the **Refresh** control in the page toolbar and by
+the **Refresh** control on the repo-issue surface; the error-surface **Retry**
+control (which already routes through the same handler) keeps its cold reload
+semantics. The banner Retry control remains a warm retry (unchanged).
+
+- On activation, before awaiting the network, the active workspace's snapshot cache
+  entry is removed and the body immediately renders the §21 loading state: exactly one
+  centered `role="status"` / `aria-live="polite"` node with the localized `loading`
+  text, and no run rows, section headers, empty lines, state cards, or previous runs.
+  The toolbar (and any banner) stays.
+- The client then issues `githubActions.snapshot` for the active workspace with
+  `refresh: true` (§8), bypassing the Host caches.
+- While that forced read is in flight, scheduled background polling for the panel must
+  not issue or apply a snapshot read and must not replace the loading state; the manual
+  reload owns the panel body. Polling resumes its normal `pollMs` cadence after the
+  forced read settles.
+- On success the forced snapshot is rendered as usual (Running/Recent rules, stale and
+  historyWarning rules unchanged) and replaces the cache entry.
+- On failure nothing stale returns: the §21 loading state ends and the existing error
+  surface + error banner (Retry) renders; the failed read is never cached.
+- While the forced read is in flight the refresh control is disabled, so repeated
+  activation cannot start a second reload. It returns to idle when the read settles,
+  including when it fails.
+- A response for a workspace the user has left must not clear the loading state of the
+  newly selected workspace or overwrite it (§26 rules unchanged); changing the
+  workspace resets the refresh control to idle.
+- With no active workspace the control is a no-op (no loading state, no read).
+
+## 29. Animated refresh control
+
+- Every refresh control (toolbar, repo-issue) renders an inline refresh glyph before
+  its localized label: an `svg` with class `gha-refresh-icon`, `aria-hidden="true"`,
+  `focusable="false"`, `currentColor` stroke, sized 16px, `display:block`.
+- While a manual reload for the active workspace is in flight, the control carries
+  `aria-busy="true"`, the `disabled` attribute, and the extra class `gha-refreshing`;
+  its glyph rotates continuously. In the idle state none of `aria-busy`,
+  `gha-refreshing`, or the rotation is present.
+- CSS: `@keyframes gha-spin { to { transform: rotate(360deg) } }` and
+  `.gha-refreshing .gha-refresh-icon { animation: gha-spin 1s linear infinite }`.
+  A `prefers-reduced-motion: reduce` rule disables that animation (glyph stays
+  visible). No literal colors; only host theme tokens and `currentColor`.
+- The animation is decorative: the loading state's `role="status"` line is the
+  accessible announcement; the button remains named "Refresh" (the existing `refresh`
+  locale key; no new locale key).
+
+## 30. v1.6 acceptance criteria
+
+1. NEW suite `test/ux4.test.js`: pressing the toolbar Refresh control immediately
+   replaces the existing rows with exactly one localized loading status (no rows,
+   headers, empty lines, or state cards) and issues exactly one
+   `githubActions.snapshot` call for the active workspace with `refresh: true`; when
+   that deferred read resolves, its rows render and the loading state disappears.
+2. The refreshed value replaces the module cache (leaving and returning to the
+   workspace — or remounting the page — renders the refreshed value, not the
+   superseded one), and the superseded rows never reappear during or after the
+   reload.
+3. A failed forced read ends the loading state with the error surface + banner and
+   does not restore or cache the old rows.
+4. While the forced read is pending, elapsed poll intervals issue no additional
+   snapshot read and keep the loading state; after it settles, normal polling resumes.
+5. The refresh control is disabled and `aria-busy="true"` with `gha-refreshing` and a
+   `gha-refresh-icon` while the forced read is pending, and returns to idle after;
+   the CSS defines the `gha-spin` animation plus a reduced-motion override (checked on
+   the stylesheet text).
+6. All 95 existing frozen tests stay green unchanged; v1.6 tests are a NEW suite
+   (`test/ux4.test.js`).

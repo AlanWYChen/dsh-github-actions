@@ -291,6 +291,38 @@
         }
       ],
       "note": "Satisfiability: the 2 ux3 tests pass against a throwaway v1.5 stub outside the workspace (/tmp, deleted); full stub gate 95/95, so the new suite is satisfiable and the 93 frozen tests stay green under the v1.5 changes."
+    },
+    "v16Red": {
+      "when": "2026-11-17, v1.6 manual-refresh cold-reload increment, against the current v1.5 implementation",
+      "command": "node scripts/run-tests.mjs all",
+      "exitCode": 1,
+      "nodeTestSummary": {
+        "tests": 101,
+        "pass": 95,
+        "fail": 6,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "failureClasses": [
+        {
+          "class": "v1.6 cold manual reload missing (no loading state)",
+          "files": [
+            "test/ux4.test.js"
+          ],
+          "tests": 5,
+          "reason": "pressing the toolbar Refresh still calls loadSnapshot({ refresh: true }) while keeping the previous rows rendered: there is no cold loading state, so the \u00a730.1, \u00a730.2, \u00a730.3, \u00a730.4 and \u00a728 tests fail on \"exactly one localized loading status\" (0 !== 1) after activation. There is also no cache drop, no poll suppression, and no busy control. All behavioral/expected-value; no import, syntax, or harness errors; the 95 existing frozen tests pass unchanged."
+        },
+        {
+          "class": "v1.6 animated refresh control missing",
+          "files": [
+            "test/ux4.test.js"
+          ],
+          "tests": 1,
+          "reason": "the toolbar/repo-issue Refresh buttons have no svg.gha-refresh-icon, no aria-busy/disabled/gha-refreshing busy state, and the stylesheet has no @keyframes gha-spin, no .gha-refreshing .gha-refresh-icon animation wiring, and no prefers-reduced-motion override; the \u00a729/\u00a730.5 test fails on \"toolbar: renders an inline svg.gha-refresh-icon\". Behavioral only."
+        }
+      ],
+      "note": "Per-test RED reasons: \u00a730.1 \"after pressing Refresh: exactly one localized loading status\"; \u00a730.2/\u00a730.3/\u00a730.4 \"during the forced reload: exactly one localized loading status\"; \u00a729/\u00a730.5 \"toolbar: renders an inline svg.gha-refresh-icon\"; \u00a728 \"during A's forced reload: exactly one localized loading status\". Satisfiability: all 6 ux4 tests pass against a throwaway v1.6 reference stub outside the workspace (/tmp/gha-v16-stub, deleted); full stub gate 101/101, so the new suite is satisfiable and the 95 frozen tests stay green under the v1.6 changes."
     }
   },
   "approvedContractRevisions": [
@@ -373,7 +405,7 @@
     "conflictEvidence": "70/74 total; the four failures are exactly the frozen-v1 conflicts above",
     "note": "Temporary /tmp sandbox only; deleted. No production file touched in the workspace. The 17 new tests passed 17/17 on a v1.1 reference stub; the full stub gate showed exactly the four then-unrevised v1 conflicts (70/74)."
   },
-  "testsOnceImplemented": 95,
+  "testsOnceImplemented": 101,
   "files": [
     {
       "path": "scripts/run-tests.mjs",
@@ -439,6 +471,11 @@
       "path": "test/ux3.test.js",
       "sha256": "e58eac813315559567fe9ede7363d81a70c340128c518e0c91736d38ed549f12",
       "status": "new v1.5 suite (final)"
+    },
+    {
+      "path": "test/ux4.test.js",
+      "sha256": "a212ba61cb0ba9ea6cdbb62a0650059851db65a8a23473108d5cb0124920ca1d",
+      "status": "new v1.6 suite (final)"
     }
   ],
   "freezeStatus": "final",
@@ -488,5 +525,15 @@
     "increment": "v1.5 cache lifetime (module-scope, survives panel unmount/remount) + same-workspace response ordering",
     "approvedContractRevisions": [],
     "note": "NEW increment: no existing assertion, fixture, harness, or runner changed. The only new frozen artifact is test/ux3.test.js. Previous approvedContractRevisions entries remain historical and unchanged."
+  },
+  "v16Freeze": {
+    "increment": "v1.6 manual refresh cold reload (\u00a728) + animated refresh control (\u00a729)",
+    "newFile": {
+      "path": "test/ux4.test.js",
+      "sha256": "a212ba61cb0ba9ea6cdbb62a0650059851db65a8a23473108d5cb0124920ca1d"
+    },
+    "approvedContractRevisions": [],
+    "satisfiability": "All 6 ux4 tests pass against a throwaway v1.6 reference stub outside the workspace (/tmp/gha-v16-stub, deleted); the full stub gate is 101/101, so the new suite is satisfiable and all 95 frozen tests stay green under the v1.6 changes.",
+    "note": "NEW increment: no existing assertion, fixture, harness, or runner changed. The only new frozen artifact is test/ux4.test.js. Previous approvedContractRevisions entries remain historical and unchanged."
   }
 }
